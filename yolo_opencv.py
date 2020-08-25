@@ -28,7 +28,7 @@ def get_output_layers(net):
     return output_layers
 
 
-def draw_prediction(img, class_id, confidence, x, y, x_plus_w, y_plus_h):
+def draw_prediction(img, class_id, confidence, x, y, x_plus_w, y_plus_h, classes, COLORS):
 
     label = str(classes[class_id])
 
@@ -95,7 +95,7 @@ def recognize(input_image, file_classes, file_weights, file_config):
       y = box[1]
       w = box[2]
       h = box[3]
-      draw_prediction(image, class_ids[i], confidences[i], round(x), round(y), round(x+w), round(y+h))
+      draw_prediction(image, class_ids[i], confidences[i], round(x), round(y), round(x+w), round(y+h), classes, COLORS)
   
   return image
 
