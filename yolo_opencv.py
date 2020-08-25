@@ -10,7 +10,13 @@ import numpy as np
 import requests
 from copy import deepcopy
 from io import BytesIO
+from PIL import Image
 
+def image_from_url(url):
+    return cv2.cvtColor(np.array(BytesIO(response.content)), cv2.COLOR_RGB2BGR)
+
+def view_image(cv2_img):
+    return Image.fromarray(cv2.cvtColor(cv2_img, cv2.COLOR_BGR2RGB))
 
 def get_output_layers(net):
     
