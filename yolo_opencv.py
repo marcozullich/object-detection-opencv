@@ -39,37 +39,48 @@ def draw_prediction(img, class_id, confidence, x, y, x_plus_w, y_plus_h, classes
     cv2.putText(img, label, (x-10,y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
 
-    
-def recognize(input_image, file_classes, file_weights, file_config):
-  image = deepcopy(input_image)
-
-  Width = image.shape[1]
-  Height = image.shape[0]
-  scale = 0.00392
-
-  classes = None
-
-  with open(file_classes, 'r') as f:
+def setup_classes(file_classes):
+    with open(file_classes, 'r') as f:
       classes = [line.strip() for line in f.readlines()]
+    colors = np.random.uniform(0, 255, size=(len(classes), 3))
+    return classes, colors
 
-  COLORS = np.random.uniform(0, 255, size=(len(classes), 3))
+def setup_net(file_weights, file_config):
+    return cv2.dnn.readNet(file_weights, file_config)
 
-  net = cv2.dnn.readNet(file_weights, file_config)
+    
+def recognize(input_image, file_classes=None, file_weights=None, file_config=None, classes=None, COLORS=None, net=None, copy_image=True, imsize=None):
+    image = deepcopy(input_image) if copy_image else input_image
 
-  blob = cv2.dnn.blobFromImage(image, scale, (416,416), (0,0,0), True, crop=False)
-
-  net.setInput(blob)
-
-  outs = net.forward(get_output_layers(net))
-
-  class_ids = []
-  confidences = []
-  boxes = []
-  conf_threshold = 0.5
-  nms_threshold = 0.4
+    if imsize is None:
+        Width = image.shape[1]
+        Height = image.shape[0]
+    else:
+        Width, Height = imsize
+    scale = 0.00392
 
 
-  for out in outs:
+    if classes is None:
+        classes, COLORS = setup_classes(file_classes)
+
+
+    if net is None:
+        net = setup_net(file_weights, file_config)
+
+    blob = cv2.dnn.blobFromImage(image, scale, (416,416), (0,0,0), True, crop=False)
+
+    net.setInput(blob)
+
+    outs = net.forward(get_output_layers(net))
+
+    class_ids = []
+    confidences = []
+    boxes = []
+    conf_threshold = 0.5
+    nms_threshold = 0.4
+
+
+    for out in outs:
       for detection in out:
           scores = detection[5:]
           class_id = np.argmax(scores)
@@ -86,9 +97,9 @@ def recognize(input_image, file_classes, file_weights, file_config):
               boxes.append([x, y, w, h])
 
 
-  indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
+    indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
 
-  for i in indices:
+    for i in indices:
       i = i[0]
       box = boxes[i]
       x = box[0]
@@ -97,5 +108,32 @@ def recognize(input_image, file_classes, file_weights, file_config):
       h = box[3]
       draw_prediction(image, class_ids[i], confidences[i], round(x), round(y), round(x+w), round(y+h), classes, COLORS)
   
-  return image
+    return image
 
+def live_recognition(file_weights, file_config, file_classes, camera_id=0):
+    net = setup_net(file_weights, file_config)
+    classes, COLORS = setup_classes(file_classes)
+
+    cap = cv2.VideoCapture(camera_id)
+
+    first_time = True
+    while(True):
+        _, frame = cap.read()
+        if first_time:
+            imsize = (frame.shape[1], frame.shape[0])
+            first_time = False
+
+        img = recognize(frame, classes=classes, COLORS=COLORS, net=net, copy_image=False, imsize=imsize)
+        cv2.imshow("Hit 'q' to exit", img)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    
+    cap.release()
+    cv2.destroyAllWindows()
+
+if __name__=="__main__":
+    # net = setup_net(,"yolov3.cfg")
+    # classes,COLORS = setup_classes("yolov3.txt")
+
+    live_recognition("../../Downloads/yolov3.weights", "yolov3.cfg", "yolov3.txt")
