@@ -136,4 +136,4 @@ if __name__=="__main__":
     # net = setup_net(,"yolov3.cfg")
     # classes,COLORS = setup_classes("yolov3.txt")
 
-    live_recognition("../../Downloads/yolov3.weights", "yolov3.cfg", "yolov3.txt")
+    live_recognition("yolov3.weights", "yolov3.cfg", "yolov3.txt")
